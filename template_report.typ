@@ -1,7 +1,7 @@
 #import "template_image.typ": *
 #import "@preview/codly:1.3.0": *
 #import "@preview/codly-languages:0.1.10": *
-#import "@preview/cjk-unbreak:0.1.1": *
+#import "@preview/cjk-spacer:0.2.0": cjk-spacer
 
 // Template based on LaTeX jsarticle/jsbook for Typst 0.13
 
@@ -22,6 +22,20 @@
     cjkheight: 0.88, // height of CJK in em
     body,
 ) = {
+    // テーマカラー
+    let get-theme-color() = {
+        let theme-colors = (
+            orange,
+            fuchsia,
+            eastern,
+            olive,
+        )
+        let idx = counter(heading).get().at(0) - 1
+        let c = theme-colors.at(calc.rem(idx, theme-colors.len()))
+
+        (ll: c.lighten(95%), l: c.lighten(80%), t: c, d: c.darken(40%))
+    }
+
     if paper == "a3" { paper = (297mm, 420mm) }
     if paper == "a4" { paper = (210mm, 297mm) }
     if paper == "a5" { paper = (148mm, 210mm) }
@@ -131,6 +145,11 @@
         #it.body
     ]
     show heading.where(level: 1): it => {
+        counter(math.equation).update(0)
+        // counter(figure.where(kind: image)).update(0)
+        // counter(figure.where(kind: table)).update(0)
+        // counter(figure.where(kind: raw)).update(0)
+        let tc = get-theme-color()
         if book {
             pagebreak(weak: true, to: "odd")
             block[
@@ -145,6 +164,101 @@
                 #v(2 * baselineskip)
             ]
         } else {
+            pagebreak()
+            let top-margin = ymargin // set page() の margin 参照
+            place(
+                top + left,
+                dx: -xmargin / 2,
+                dy: -top-margin,
+                block(
+                    width: paperwidth - xmargin,
+                    height: top-margin,
+                    fill: tc.l,
+                    inset: (x: xmargin / 2),
+                    stroke: (top: none, rest: 3pt + tc.d),
+                    radius: (bottom: 20pt),
+                    align(horizon)[
+                        #set par(first-line-indent: 0em)
+                        #set text(
+                            size: 2em,
+                            weight: "bold",
+                            fill: tc.d,
+                            top-edge: "ascender",
+                            bottom-edge: "descender",
+                        )
+                        #if it.numbering != none {
+                            counter(heading).display()
+                            h(1em)
+                        }
+                        #it.body
+                    ],
+                ),
+            )
+            h(baselineskip - cjkheight * fontsize)
+        }
+        codly(
+            fill: tc.ll,
+            stroke: 1pt + tc.d,
+            header-cell-args: (fill: tc.d),
+            number-format: it => text(fill: tc.t)[#it],
+        )
+    }
+    show heading.where(level: 2): it => {
+        block(
+            width: 100%,
+            above: (if book { 2.75 } else { 1 }) * baselineskip - cjkheight * fontsize,
+            below: (if book { 1.25 } else { 1 }) * baselineskip - cjkheight * fontsize,
+            breakable: false,
+            sticky: true,
+        )[
+            #set par(first-line-indent: 0em)
+            #set text(size: (if book { 1.4 } else { 1.2 }) * fontsize)
+            #if not book { v(baselineskip / 2 + 0.1 * fontsize) }
+            #stack(
+                {
+                    h(0.5em)
+                    if it.numbering != none {
+                        counter(heading).display()
+                        h(1em)
+                    }
+                    it.body
+                },
+                v(0.6em),
+                line(length: 100%, stroke: (thickness: 2pt, paint: get-theme-color().d, cap: "round")),
+            )
+            #if not book { v(baselineskip / 2 - 0.1 * fontsize) }
+        ]
+    }
+    // ================================ 勝手に追加した level 3 の見出し ================================
+    show heading.where(level: 3): it => {
+        let tc = get-theme-color()
+        block(
+            spacing: baselineskip - cjkheight * fontsize,
+            breakable: false,
+            sticky: true,
+        )[
+            #set par(first-line-indent: 0em)
+            #set text(top-edge: "ascender", bottom-edge: "descender")
+            #box(
+                width: 100%,
+                fill: tc.l,
+                inset: (x: 0.9em, y: 0.2em),
+                stroke: (left: 5pt + tc.d),
+                {
+                    if it.numbering != none {
+                        counter(heading).display()
+                        h(1em)
+                    }
+                    it.body
+                },
+            )
+        ]
+    }
+    // =============================================================================================
+    // ================================ 勝手に追加した目次の見出し設定 ================================
+    show outline: body => {
+        show heading.where(level: 1): it => {
+            set align(center)
             block(
                 above: baselineskip - cjkheight * fontsize,
                 below: baselineskip - cjkheight * fontsize,
@@ -162,40 +276,9 @@
                 #v(baselineskip / 2 - 0.2 * fontsize)
             ]
         }
+        body
     }
-    show heading.where(level: 2): it => block(
-        above: (if book { 2.75 } else { 1 }) * baselineskip - cjkheight * fontsize,
-        below: (if book { 1.25 } else { 1 }) * baselineskip - cjkheight * fontsize,
-        breakable: false,
-        sticky: true,
-    )[
-        #set par(first-line-indent: 0em)
-        #set text(size: (if book { 1.4 } else { 1.2 }) * fontsize)
-        #if not book { v(baselineskip / 2 + 0.1 * fontsize) }
-        #if it.numbering != none {
-            counter(heading).display()
-            h(1em)
-        }
-        #it.body
-        #if not book { v(baselineskip / 2 - 0.1 * fontsize) }
-    ]
-    // ========== 勝手に追加した部分 ==========
-    show heading.where(level: 3): it => block(
-        spacing: baselineskip - cjkheight * fontsize,
-        breakable: false,
-        sticky: true,
-    )[
-        #set par(first-line-indent: 0em)
-        // #set text(size: 1.2 * fontsize)
-        #if not book { v(baselineskip / 2 + 0.1 * fontsize) }
-        #if it.numbering != none {
-            counter(heading).display()
-            h(1em)
-        }
-        #it.body
-        #if not book { v(baselineskip / 2 - 0.1 * fontsize) }
-    ]
-    // ====================================
+    // ===========================================================================================
     set list(indent: 1.2em)
     show strong: set text(
         font: ((name: sansfont, covers: non-cjk), sansfont-cjk),
@@ -222,8 +305,17 @@
     show table: set text(top-edge: (2 * cjkheight - 1) * fontsize)
     set footnote.entry(indent: 1.6em)
     show figure.where(kind: table): set figure.caption(position: top)
-    set ref(supplement: none)
+    // set ref(supplement: none)
     // finally
+
+    set list(marker: n => context {
+        set text(fill: get-theme-color().d)
+        ($bullet$, $triangle.stroked.small.r$, bf[--]).at(n)
+    })
+    set enum(numbering: (..nums) => context text(font: sansfont, fill: get-theme-color().d, numbering(
+        "1.a.i.",
+        ..nums,
+    )))
     body
 }
 
@@ -317,28 +409,84 @@
         seriffont-cjk: _font-serif.at(0),
         sansfont-cjk: _font-sanserif.at(0),
     )
+    show: cjk-spacer
+    set underline(offset: 1pt)
     show strong: it => bf(text(fill: cudr, it))
     show emph: it => bf(text(style: "normal", it.body))
-    show link: body => underline(text(fill: cudblu, body))
+    show link: it => underline(text(fill: cudblu, it))
+    set figure(gap: 1em)
     set figure.caption(separator: [. ])
+    show figure: it => {
+        it
+        v(1em)
+    }
     show raw.where(block: false): it => {
         highlight(
-            it,
-            fill: rgb("f3f3f3"),
+            {
+                let w = measure([a]).width // [a] の横幅を測定
+                hide([a]) // 見えない [a]
+                sym.wj // 改行を防ぐ単語結合子
+                h(-w, weak: false) // [a] の横幅を打ち消す
+                sym.wj // 改行を防ぐ単語結合子
+                it // 数式本体
+                sym.wj // 改行を防ぐ単語結合子
+                h(-w, weak: false) // [a] の横幅を打ち消す
+                sym.wj // 改行を防ぐ単語結合子
+                hide([a]) // 見えない [a]
+            },
+            fill: luma(240),
             top-edge: 1.2em,
             bottom-edge: -0.5em,
         )
     }
-    set list(marker: ($bullet$, $triangle.stroked.small.r$, bf[--]))
 
     show: codly-init
     codly(
-        fill: rgb("#f3f3f3"),
+        header-transform: it => text(fill: white, cjk-latin-spacing: auto, it),
         zebra-fill: none,
-        stroke: none,
         languages: codly-languages,
-        header-cell-args: (fill: silver),
     )
+
+    show raw.where(block: true): it => {
+        set text(fill: luma(70), top-edge: "bounds", bottom-edge: "bounds")
+        it
+    }
+
+    // numbering と ref
+    let eq-numbering = "(1.1)"
+    let fg-numbering = "1.1"
+    set math.equation(
+        numbering: (..num) => numbering(eq-numbering, counter(heading).get().at(0), ..num),
+        supplement: [式],
+    )
+    // set figure(gap: 1em, numbering: num => numbering(fg-numbering, counter(heading).get().at(0), num))
+    show ref: it => {
+        let el = it.element
+        if el == none { return it }
+        let loc = el.location()
+        let sec-count = counter(heading).at(loc)
+        let is-figure = el.func() == figure
+        let is-eq = el.func() == math.equation
+        let is-equate = is-figure and el.kind == math.equation
+        let is-h = el.func() == heading
+        let is-image = is-figure and el.kind == image
+        let is-table = is-figure and el.kind == table
+
+        if is-eq or is-equate {
+            let (count,) = counter(math.equation).at(loc)
+            if is-equate {
+                count = count - 1 // equate(sub-numbering: false) のとき counter がバグるため
+            }
+            link(it.target, el.supplement + sym.wj + numbering(eq-numbering, sec-count.at(0), count))
+        } else if is-h {
+            link(it.target, numbering(el.numbering, ..sec-count) + sym.wj + "節")
+            // } else if is-figure {
+            //     let count = counter(figure.where(kind: el.kind)).at(loc)
+            //     link(it.target, el.supplement + sym.wj + numbering(fg-numbering, sec-count.at(0), ..count))
+        } else {
+            underline(text(fill: cudblu, it))
+        }
+    }
 
     body
 }
