@@ -4,6 +4,14 @@
 #import "@preview/cjk-spacer:0.2.0": cjk-spacer
 #import "@preview/equate:0.3.2": equate
 
+#let fonts-state = state("fonts", (
+    non-cjk: regex("[\u0000-\u2023]"),
+    serif: "New Computer Modern", // or "Libertinus Serif" or "Source Serif Pro"
+    serif-cjk: "Harano Aji Mincho", // or "Yu Mincho" or "Hiragino Mincho ProN"
+    sans: "Source Sans Pro", // or "Arial" or "New Computer Modern Sans" or "Libertinus Sans"
+    sans-cjk: "Harano Aji Gothic",
+))
+
 #let myreport(
     lang: "ja",
     seriffont: "New Computer Modern", // or "Libertinus Serif" or "Source Serif Pro"
@@ -21,9 +29,18 @@
     cjkheight: 0.88, // height of CJK in em
     body,
 ) = {
+    // ================================================== fonts state ==================================================
+    fonts-state.update(d => {
+        d.non-cjk = non-cjk
+        d.serif = seriffont
+        d.serif-cjk = seriffont-cjk
+        d.sans = sansfont
+        d.sans-cjk = sansfont-cjk
+        d
+    })
     // ================================================== パッケージ ==================================================
     show: cjk-spacer
-    show: equate
+    // show: equate
     show: codly-init
     codly(
         header-transform: it => text(fill: white, cjk-latin-spacing: auto, it),
@@ -76,47 +93,50 @@
         columns: cols,
         numbering: "1",
         footer: if book { none } else { auto },
-        header: if not book { auto } else {
-            context {
-                let n = if page.numbering == none { "" } else {
-                    counter(page).display() // logical page number
-                }
-                let p = here().page() // physical page number
-                let h1 = heading.where(level: 1)
-                let h1p = query(h1).map(it => it.location().page())
-                if p > 1 and not p in h1p {
-                    if calc.odd(p) {
-                        let h2 = heading.where(level: 2)
-                        let h2last = query(h2.before(here())).at(-1, default: none)
-                        let h2next = query(h2.after(here())).at(0, default: none)
-                        if h2next != none and h2next.location().page() == p { h2last = h2next }
-                        if h2last != none {
-                            let c = counter(heading).at(h2last.location())
-                            stack(
-                                spacing: 0.2em,
-                                if h2last.numbering == none {
-                                    [ #h2last.body #h(1fr) #n ]
-                                } else {
-                                    [ #{ c.at(0) }.#{ c.at(1) }#h(1em)#h2last.body #h(1fr) #n ]
-                                },
-                                line(stroke: 0.4pt, length: 100%),
-                            )
-                        }
-                    } else {
-                        let h1last = query(h1.before(here())).at(-1, default: none)
-                        let h1next = query(h1.after(here())).at(0, default: none)
-                        if h1next != none and h1next.location().page() == p { h1last = h1next }
-                        if h1last != none {
-                            let c = counter(heading).at(h1last.location())
-                            stack(
-                                spacing: 0.2em,
-                                if h1last.numbering == none {
-                                    [ #n #h(1fr) #h1last.body ]
-                                } else {
-                                    [ #n #h(1fr) 第#{ c.at(0) }章#h(1em)#h1last.body ]
-                                },
-                                line(stroke: 0.4pt, length: 100%),
-                            )
+        header: {
+            context counter(footnote).update(0)
+            if book {
+                context {
+                    let n = if page.numbering == none { "" } else {
+                        counter(page).display() // logical page number
+                    }
+                    let p = here().page() // physical page number
+                    let h1 = heading.where(level: 1)
+                    let h1p = query(h1).map(it => it.location().page())
+                    if p > 1 and not p in h1p {
+                        if calc.odd(p) {
+                            let h2 = heading.where(level: 2)
+                            let h2last = query(h2.before(here())).at(-1, default: none)
+                            let h2next = query(h2.after(here())).at(0, default: none)
+                            if h2next != none and h2next.location().page() == p { h2last = h2next }
+                            if h2last != none {
+                                let c = counter(heading).at(h2last.location())
+                                stack(
+                                    spacing: 0.2em,
+                                    if h2last.numbering == none {
+                                        [ #h2last.body #h(1fr) #n ]
+                                    } else {
+                                        [ #{ c.at(0) }.#{ c.at(1) }#h(1em)#h2last.body #h(1fr) #n ]
+                                    },
+                                    line(stroke: 0.4pt, length: 100%),
+                                )
+                            }
+                        } else {
+                            let h1last = query(h1.before(here())).at(-1, default: none)
+                            let h1next = query(h1.after(here())).at(0, default: none)
+                            if h1next != none and h1next.location().page() == p { h1last = h1next }
+                            if h1last != none {
+                                let c = counter(heading).at(h1last.location())
+                                stack(
+                                    spacing: 0.2em,
+                                    if h1last.numbering == none {
+                                        [ #n #h(1fr) #h1last.body ]
+                                    } else {
+                                        [ #n #h(1fr) 第#{ c.at(0) }章#h(1em)#h1last.body ]
+                                    },
+                                    line(stroke: 0.4pt, length: 100%),
+                                )
+                            }
                         }
                     }
                 }
@@ -304,7 +324,7 @@
     show emph: set text(weight: "bold", style: "normal")
     set list(indent: 0.722em, marker: n => context {
         set text(fill: get-theme-color().d)
-        ($bullet$, $triangle.stroked.small.r$, bf[--]).at(n)
+        ($bullet$, $triangle.stroked.small.r$, t-bf[--]).at(n)
     })
     show list: set block(spacing: 1.5 * baselineskip - cjkheight * fontsize)
     set enum(indent: 0.722em, numbering: (..nums) => context text(font: sansfont, fill: get-theme-color().d, numbering(
@@ -320,6 +340,10 @@
     show quote.where(block: true): set block(spacing: 1.5 * baselineskip - cjkheight * fontsize)
 
     set footnote.entry(indent: 1.6em)
+    set footnote(numbering: n => {
+        set text(font: "New Computer Modern Math", baseline: 0pt, size: 1em)
+        sym.dagger
+    })
 
     // show raw.where(block: true): set block(width: 100%, fill: luma(240), inset: 1em)
     show raw.where(block: true): set par(justify: false, leading: 0.8 * baselineskip - cjkheight * fontsize)
@@ -350,12 +374,14 @@
     show figure.where(kind: table): set figure.caption(position: top)
     set figure(gap: 1em)
     show figure: it => {
+        v(1em, weak: true)
         it
         v(1em)
     }
     set figure.caption(separator: h(1em))
 
     // ================================================== 数式 ==================================================
+    set math.equation(number-align: end + bottom)
     show math.equation.where(block: true): set block(spacing: 1.5 * baselineskip - cjkheight * fontsize)
     show math.equation.where(block: false): set math.lr(size: 1em)
     show math.equation.where(block: false): set math.frac(style: "horizontal")
@@ -385,7 +411,6 @@
         math.root(idx, rdc + h(1em / 6))
     }
     show math.root: it => custom-math-func(it, add-space-root(it.index, it.radicand))
-
 
     // ================================================== numbering と ref ==================================================
     let eq-numbering = "(1.1)"
@@ -418,6 +443,8 @@
             // } else if is-figure {
             //     let count = counter(figure.where(kind: el.kind)).at(loc)
             //     link(it.target, el.supplement + sym.wj + numbering(fg-numbering, sec-count.at(0), ..count))
+        } else {
+            it
         }
     }
 
@@ -520,4 +547,9 @@
         align: left,
         ..body
     )
+}
+
+#let nonumeq(body) = {
+    set math.equation(numbering: none)
+    body
 }
