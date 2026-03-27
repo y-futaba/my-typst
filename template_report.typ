@@ -230,7 +230,6 @@
                     ],
                 ),
             )
-            h(baselineskip - cjkheight * fontsize)
         }
         codly(
             fill: tc.ll,
@@ -393,7 +392,7 @@
         if bfr.has("label") and bfr.label == <custom-math-stop-recursion> {
             bfr
         } else {
-            [#aft<custom-math-sugalab-stop-recursion>]
+            [#aft<custom-math-stop-recursion>]
         }
     }
     // frac の線を延長
