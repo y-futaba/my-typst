@@ -1,7 +1,6 @@
 #import "template_image.typ": *
 #import "@preview/codly:1.3.0": *
 #import "@preview/codly-languages:0.1.10": *
-#import "@preview/cjk-spacer:0.2.0": cjk-spacer
 #import "@preview/equate:0.3.2": equate
 
 #let fonts-state = state("fonts", (

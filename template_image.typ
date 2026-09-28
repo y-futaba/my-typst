@@ -1,6 +1,8 @@
 #import "@preview/fancy-units:0.1.1": num, qty, unit
 #import "@preview/cetz:0.4.2"
 #import "@preview/fletcher:0.5.8"
+#import "@preview/physica:0.9.8": *
+#import "@preview/cjk-spacer:0.2.0": cjk-spacer
 
 #let fonts-state = state("fonts", (
     non-cjk: regex("[\u0000-\u2023]"),
@@ -9,9 +11,11 @@
     sans: "Source Sans Pro", // or "Arial" or "New Computer Modern Sans" or "Libertinus Sans"
     sans-cjk: "Harano Aji Gothic",
 ))
-#let mytext(body) = context {
+#let myimage(body) = context {
     let (non-cjk, serif, serif-cjk) = fonts-state.get()
     set text(lang: "jp", font: ((name: serif, covers: non-cjk), serif-cjk))
+    set page(width: auto, height: auto, margin: 0pt)
+    show: cjk-spacer
 
     body
 }
