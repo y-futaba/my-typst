@@ -318,8 +318,12 @@
 
     // ================================================== 装飾 ==================================================
     set underline(offset: 1pt)
-    show strong: set text(fill: cudbr, weight: "bold")
-    show emph: set text(weight: "bold", style: "normal")
+    show strong: it => context text(
+        font: ((name: sansfont, covers: non-cjk), sansfont-cjk),
+        fill: get-theme-color().d,
+        style: "normal",
+        it,
+    )
     set list(indent: 0.722em, marker: n => context {
         set text(fill: get-theme-color().d)
         ($bullet$, $triangle.stroked.small.r$, t-bf[--]).at(n)
